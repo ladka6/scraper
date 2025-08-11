@@ -15,13 +15,12 @@ export default async function handler(req, res) {
     const buffers = [];
     const seenPodReferences = new Set();
 
-    // Parse uploaded file (if any)
+    // Collect request body chunks
     await new Promise((resolve, reject) => {
       req.on("data", (chunk) => buffers.push(chunk));
       req.on("end", () => {
         const fileBuffer = Buffer.concat(buffers);
 
-        // If there's a file, check Excel content
         if (fileBuffer.length > 0) {
           try {
             const workbook = XLSX.read(fileBuffer, { type: "buffer" });
@@ -40,7 +39,6 @@ export default async function handler(req, res) {
       req.on("error", reject);
     });
 
-    // Launch Puppeteer with serverless settings
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
@@ -51,9 +49,7 @@ export default async function handler(req, res) {
     const page = await browser.newPage();
     await page.goto(
       "https://een.ec.europa.eu/partnering-opportunities?f%5B0%5D=tc%3A3298",
-      {
-        waitUntil: "networkidle0",
-      }
+      { waitUntil: "networkidle0" }
     );
 
     const workbookOut = new ExcelJS.Workbook();

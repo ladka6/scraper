@@ -41,34 +41,32 @@ export default function Home() {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 5, textAlign: "center" }}>
-        <Typography variant="h4" gutterBottom>
-          EU Partnering Opportunities Scraper
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          Upload an old Excel file (optional) to skip duplicate POD References.
-        </Typography>
-        <input
-          type="file"
-          accept=".xlsx"
-          onChange={handleFileChange}
-          style={{ margin: "20px 0" }}
-        />
-        <Box>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleScrape}
-            disabled={loading}
-          >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              "Start Scraping"
-            )}
-          </Button>
-        </Box>
+    <Container maxWidth="sm" sx={{ mt: 5, textAlign: "center" }}>
+      <Typography variant="h4" gutterBottom>
+        EU Partnering Opportunities Scraper
+      </Typography>
+      <Typography variant="body1" gutterBottom>
+        Upload an old Excel file (optional) to skip duplicate POD References.
+      </Typography>
+      <input
+        type="file"
+        accept=".xlsx"
+        onChange={handleFileChange}
+        style={{ margin: "20px 0" }}
+      />
+      <Box>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleScrape}
+          disabled={loading}
+        >
+          {loading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            "Start Scraping"
+          )}
+        </Button>
       </Box>
     </Container>
   );
