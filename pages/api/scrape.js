@@ -1,4 +1,4 @@
-import chromium from "@sparticuz/chromium";
+import chromium from "chrome-aws-lambda";
 import puppeteer from "puppeteer-core";
 import ExcelJS from "exceljs";
 import XLSX from "xlsx";
@@ -7,15 +7,15 @@ export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
+    res.status(405).json({ error: "Method Not Allowed" });
     return;
   }
 
   try {
+    // Parse incoming file upload
     const buffers = [];
     const seenPodReferences = new Set();
 
-    // Collect request body chunks
     await new Promise((resolve, reject) => {
       req.on("data", (chunk) => buffers.push(chunk));
       req.on("end", () => {
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
                 seenPodReferences.add(row["POD Reference"]);
             });
           } catch (err) {
-            console.error("Failed to read uploaded Excel:", err);
+            console.error("Failed to parse uploaded Excel file:", err);
           }
         }
         resolve();
@@ -39,10 +39,11 @@ export default async function handler(req, res) {
       req.on("error", reject);
     });
 
+    // Launch Puppeteer with chrome-aws-lambda
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath,
       headless: chromium.headless,
     });
 
@@ -142,8 +143,8 @@ export default async function handler(req, res) {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
     res.send(Buffer.from(buffer));
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
   }
 }
