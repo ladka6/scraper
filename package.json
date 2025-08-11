@@ -2,6 +2,8 @@
   "name": "scraper",
   "version": "1.0.0",
   "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
     "@mui/material": "^5.15.8",
     "@sparticuz/chromium": "^115.0.0",
     "exceljs": "^4.4.0",
