@@ -2,9 +2,12 @@
   "name": "scraper",
   "version": "1.0.0",
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.1",
     "@sparticuz/chromium-min": "^138.0.2",
     "exceljs": "^4.4.0",
-    "formidable": "^3.5.0",
+    "formidable": "^3.5.4",
     "next": "^15.4.6",
     "puppeteer-core": "^24.16.1",
     "react": "^19.1.1",

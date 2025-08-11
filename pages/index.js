@@ -1,15 +1,27 @@
-// pages/index.js
 import { useState } from "react";
+import {
+  Container,
+  Typography,
+  Button,
+  Box,
+  LinearProgress,
+} from "@mui/material";
 
 export default function Home() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleSubmit = async () => {
+    if (!file) {
+      alert("Please upload an Excel file or leave blank for fresh scrape.");
+    }
     setLoading(true);
     const formData = new FormData();
-    if (file) formData.append("oldFile", file);
+    if (file) formData.append("file", file);
 
     const res = await fetch("/api/scrape", {
       method: "POST",
@@ -22,26 +34,33 @@ export default function Home() {
       const a = document.createElement("a");
       a.href = url;
       a.download = "results.xlsx";
-      document.body.appendChild(a);
       a.click();
-      a.remove();
+    } else {
+      alert("Scraping failed");
     }
     setLoading(false);
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Scraper</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="file"
-          accept=".xlsx"
-          onChange={(e) => setFile(e.target.files[0])}
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "Scraping..." : "Start Scraping"}
-        </button>
-      </form>
-    </div>
+    <Container maxWidth="sm" sx={{ mt: 5 }}>
+      <Typography variant="h4" gutterBottom>
+        EU Partnering Opportunities Scraper
+      </Typography>
+      <Box>
+        <Button variant="contained" component="label" sx={{ mb: 2 }}>
+          {file ? file.name : "Upload Old Excel File"}
+          <input
+            type="file"
+            hidden
+            accept=".xlsx"
+            onChange={handleFileChange}
+          />
+        </Button>
+      </Box>
+      <Button variant="contained" color="primary" onClick={handleSubmit}>
+        Start Scraping
+      </Button>
+      {loading && <LinearProgress sx={{ mt: 2 }} />}
+    </Container>
   );
 }
