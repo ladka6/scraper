@@ -1,0 +1,10 @@
+{
+  "name": "scraper",
+  "version": "1.0.0",
+  "dependencies": {
+    "@sparticuz/chromium-min": "^138.0.2",
+    "exceljs": "^4.4.0",
+    "puppeteer-core": "^24.16.1",
+    "formidable": "^3.5.0"
+  }
+}
