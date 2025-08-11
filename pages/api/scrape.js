@@ -1,5 +1,3 @@
-import chromium from "chrome-aws-lambda";
-import puppeteer from "puppeteer-core";
 import ExcelJS from "exceljs";
 import XLSX from "xlsx";
 
@@ -39,13 +37,28 @@ export default async function handler(req, res) {
       req.on("error", reject);
     });
 
+    let browser;
+
+    const isVercel = !!process.env.VERCEL_ENV;
+    let puppeteer,
+      launchOptions = {
+        headless: true,
+      };
+
+    if (isVercel) {
+      const chromium = (await import("@sparticuz/chromium")).default;
+      puppeteer = await import("puppeteer-core");
+      launchOptions = {
+        ...launchOptions,
+        args: chromium.args,
+        executablePath: await chromium.executablePath(),
+      };
+    } else {
+      puppeteer = await import("puppeteer");
+    }
+
     // Launch Puppeteer with chrome-aws-lambda
-    const browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
-    });
+    browser = await puppeteer.launch(launchOptions);
 
     const page = await browser.newPage();
     await page.goto(
