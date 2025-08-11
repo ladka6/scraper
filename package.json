@@ -2,15 +2,13 @@
   "name": "scraper",
   "version": "1.0.0",
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/material": "^7.3.1",
-    "@sparticuz/chromium-min": "^138.0.2",
+    "@mui/material": "^5.15.8",
+    "@sparticuz/chromium": "^115.0.0",
     "exceljs": "^4.4.0",
-    "formidable": "^3.5.4",
-    "next": "^15.4.6",
-    "puppeteer-core": "^24.16.1",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "next": "^14.1.0",
+    "puppeteer-core": "^21.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "xlsx": "^0.18.5"
   }
 }
