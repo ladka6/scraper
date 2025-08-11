@@ -1,46 +1,51 @@
-import chromium from "@sparticuz/chromium-min";
+import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
 import ExcelJS from "exceljs";
-import formidable from "formidable";
-import fs from "fs";
+import XLSX from "xlsx";
 
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
 
   try {
-    // Parse file if uploaded
-    const form = new formidable.IncomingForm({ keepExtensions: true });
-    const data = await new Promise((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        else resolve({ fields, files });
-      });
-    });
-
+    const buffers = [];
     const seenPodReferences = new Set();
 
-    if (data.files.file) {
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.readFile(data.files.file.filepath);
-      const sheet = workbook.worksheets[0];
-      sheet.eachRow((row, rowNumber) => {
-        if (rowNumber > 1) {
-          seenPodReferences.add(
-            row.getCell(3).value?.text || row.getCell(3).value
-          );
-        }
-      });
-    }
+    // Parse uploaded file (if any)
+    await new Promise((resolve, reject) => {
+      req.on("data", (chunk) => buffers.push(chunk));
+      req.on("end", () => {
+        const fileBuffer = Buffer.concat(buffers);
 
+        // If there's a file, check Excel content
+        if (fileBuffer.length > 0) {
+          try {
+            const workbook = XLSX.read(fileBuffer, { type: "buffer" });
+            const sheetName = workbook.SheetNames[0];
+            const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            data.forEach((row) => {
+              if (row["POD Reference"])
+                seenPodReferences.add(row["POD Reference"]);
+            });
+          } catch (err) {
+            console.error("Failed to read uploaded Excel:", err);
+          }
+        }
+        resolve();
+      });
+      req.on("error", reject);
+    });
+
+    // Launch Puppeteer with serverless settings
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: process.env.AWS_REGION
-        ? await chromium.executablePath()
-        : puppeteer.executablePath(),
-      headless: true,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
     });
 
     const page = await browser.newPage();
@@ -51,8 +56,9 @@ export default async function handler(req, res) {
       }
     );
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Partnering Opportunities");
+    const workbookOut = new ExcelJS.Workbook();
+    const worksheet = workbookOut.addWorksheet("Partnering Opportunities");
+
     worksheet.columns = [
       { header: "Link", key: "link", width: 60 },
       { header: "Header", key: "header", width: 50 },
@@ -62,6 +68,7 @@ export default async function handler(req, res) {
     worksheet.getRow(1).font = { bold: true };
 
     let currentPage = 1;
+
     while (true) {
       const links = await page.$$eval(
         "div.ecl-content-block__title a.ecl-link.ecl-link--standalone",
@@ -78,8 +85,8 @@ export default async function handler(req, res) {
           )
           .catch(() => "");
 
-        const getDefinition = async (label) =>
-          detailPage
+        async function getDefinition(label) {
+          return detailPage
             .$$eval(
               "dt.ecl-description-list__term",
               (terms, targetLabel) => {
@@ -94,6 +101,7 @@ export default async function handler(req, res) {
               label
             )
             .catch(() => null);
+        }
 
         const podReference = await getDefinition("POD Reference");
         const shortSummary = await getDefinition("Short Summary");
@@ -103,20 +111,23 @@ export default async function handler(req, res) {
           continue;
         }
 
-        worksheet.addRow({
+        const row = worksheet.addRow({
           link,
           header,
           podReference,
           shortSummary,
         });
+        const podRefCell = row.getCell("podReference");
+        podRefCell.value = { text: podReference, hyperlink: link };
+        podRefCell.font = { color: { argb: "FF0000FF" }, underline: true };
 
         seenPodReferences.add(podReference);
         await detailPage.close();
       }
 
-      const nextSelector =
-        "li.ecl-pagination__item.ecl-pagination__item--next a";
-      const nextButton = await page.$(nextSelector);
+      const nextButton = await page.$(
+        "li.ecl-pagination__item.ecl-pagination__item--next a"
+      );
       if (!nextButton || currentPage >= 2) break;
 
       await Promise.all([
@@ -128,7 +139,7 @@ export default async function handler(req, res) {
 
     await browser.close();
 
-    const buffer = await workbook.xlsx.writeBuffer();
+    const buffer = await workbookOut.xlsx.writeBuffer();
     res.setHeader("Content-Disposition", "attachment; filename=results.xlsx");
     res.setHeader(
       "Content-Type",
@@ -137,6 +148,6 @@ export default async function handler(req, res) {
     res.send(Buffer.from(buffer));
   } catch (err) {
     console.error(err);
-    res.status(500).send("Scraping failed");
+    res.status(500).json({ error: err.message });
   }
 }

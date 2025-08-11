@@ -1,24 +1,19 @@
 import { useState } from "react";
 import {
+  Button,
   Container,
   Typography,
-  Button,
   Box,
-  LinearProgress,
+  CircularProgress,
 } from "@mui/material";
 
 export default function Home() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+  const handleFileChange = (e) => setFile(e.target.files[0]);
 
-  const handleSubmit = async () => {
-    if (!file) {
-      alert("Please upload an Excel file or leave blank for fresh scrape.");
-    }
+  const handleScrape = async () => {
     setLoading(true);
     const formData = new FormData();
     if (file) formData.append("file", file);
@@ -28,39 +23,53 @@ export default function Home() {
       body: formData,
     });
 
-    if (res.ok) {
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "results.xlsx";
-      a.click();
-    } else {
+    if (!res.ok) {
       alert("Scraping failed");
+      setLoading(false);
+      return;
     }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "results.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     setLoading(false);
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 5 }}>
-      <Typography variant="h4" gutterBottom>
-        EU Partnering Opportunities Scraper
-      </Typography>
-      <Box>
-        <Button variant="contained" component="label" sx={{ mb: 2 }}>
-          {file ? file.name : "Upload Old Excel File"}
-          <input
-            type="file"
-            hidden
-            accept=".xlsx"
-            onChange={handleFileChange}
-          />
-        </Button>
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 5, textAlign: "center" }}>
+        <Typography variant="h4" gutterBottom>
+          EU Partnering Opportunities Scraper
+        </Typography>
+        <Typography variant="body1" gutterBottom>
+          Upload an old Excel file (optional) to skip duplicate POD References.
+        </Typography>
+        <input
+          type="file"
+          accept=".xlsx"
+          onChange={handleFileChange}
+          style={{ margin: "20px 0" }}
+        />
+        <Box>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleScrape}
+            disabled={loading}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Start Scraping"
+            )}
+          </Button>
+        </Box>
       </Box>
-      <Button variant="contained" color="primary" onClick={handleSubmit}>
-        Start Scraping
-      </Button>
-      {loading && <LinearProgress sx={{ mt: 2 }} />}
     </Container>
   );
 }
