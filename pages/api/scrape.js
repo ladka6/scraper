@@ -77,8 +77,6 @@ export default async function handler(req, res) {
     ];
     worksheet.getRow(1).font = { bold: true };
 
-    let currentPage = 1;
-
     while (true) {
       const links = await page.$$eval(
         "div.ecl-content-block__title a.ecl-link.ecl-link--standalone",
@@ -138,13 +136,12 @@ export default async function handler(req, res) {
       const nextButton = await page.$(
         "li.ecl-pagination__item.ecl-pagination__item--next a"
       );
-      if (!nextButton || currentPage >= 2) break;
+      if (!nextButton) break;
 
       await Promise.all([
         page.waitForNavigation({ waitUntil: "networkidle0" }),
         nextButton.click(),
       ]);
-      currentPage++;
     }
 
     await browser.close();
